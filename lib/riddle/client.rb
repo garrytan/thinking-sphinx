@@ -179,12 +179,12 @@ module Riddle
     # Example:
     #   client.set_anchor('lat', -0.6591741, 'long', 2.530770)
     #
-    def set_anchor(lat_attr, lat, long_attr, long)
+    def set_anchor(lat_attr, lat, long_attr, long, units='')
       @anchor = {
         :latitude_attribute   => lat_attr,
-        :latitude             => lat,
+        :latitude             => (units == 'degrees' ? lat * Math::PI / 180 : lat),
         :longitude_attribute  => long_attr,
-        :longitude            => long
+        :longitude            => (units == 'degrees' ? long * Math::PI / 180 : long)
       }
     end
     

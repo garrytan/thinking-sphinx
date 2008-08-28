@@ -1,6 +1,11 @@
 require 'spec/spec_helper'
+require 'will_paginate/collection'
 
 describe ThinkingSphinx::Search do
+  describe "search method" do
+    it "should actually have some tests"
+  end
+  
   describe "search_for_id method" do
     before :each do
       @client = Riddle::Client.stub_instance(
@@ -57,21 +62,29 @@ describe ThinkingSphinx::Search do
     it "should honour the :include option" do
       ThinkingSphinx::Search.send(
         :instance_from_result,
-        {:doc => 1, :attributes => {"class_crc" => 123}},
+        {
+          :doc => 1, :attributes => {
+            "sphinx_internal_id" => 2, "class_crc" => 123
+          }
+        },
         {:include => :assoc}
       )
 
-      Person.should have_received(:find).with(1, :include => :assoc, :select => nil)
+      Person.should have_received(:find).with(2, :include => :assoc, :select => nil)
     end
 
     it "should honour the :select option" do
       ThinkingSphinx::Search.send(
         :instance_from_result,
-        {:doc => 1, :attributes => {"class_crc" => 123}},
+        {
+          :doc => 1, :attributes => {
+            "sphinx_internal_id" => 2, "class_crc" => 123
+          }
+        },
         {:select => :columns}
       )
 
-      Person.should have_received(:find).with(1, :include => nil, :select => :columns)
+      Person.should have_received(:find).with(2, :include => nil, :select => :columns)
     end
 
   end
@@ -82,10 +95,14 @@ describe ThinkingSphinx::Search do
       @person_b = Person.stub_instance
       @person_c = Person.stub_instance
 
+      @person_a.stub_method(:attributes => [])
+      @person_b.stub_method(:attributes => [])
+      @person_c.stub_method(:attributes => [])
+      
       @results = [
-        {:doc => @person_a.id},
-        {:doc => @person_b.id},
-        {:doc => @person_c.id}
+        {:attributes => {"sphinx_internal_id" => @person_a.id}},
+        {:attributes => {"sphinx_internal_id" => @person_b.id}},
+        {:attributes => {"sphinx_internal_id" => @person_c.id}}
       ]
       
       Person.stub_method(
@@ -105,13 +122,13 @@ describe ThinkingSphinx::Search do
       )
 
       ThinkingSphinx::Search.should have_received(:instance_from_result).with(
-        {:doc => @person_a.id}, {}
+        {:attributes => {"sphinx_internal_id" => @person_a.id}}, {}
       )
       ThinkingSphinx::Search.should have_received(:instance_from_result).with(
-        {:doc => @person_b.id}, {}
+        {:attributes => {"sphinx_internal_id" => @person_b.id}}, {}
       )
       ThinkingSphinx::Search.should have_received(:instance_from_result).with(
-        {:doc => @person_c.id}, {}
+        {:attributes => {"sphinx_internal_id" => @person_c.id}}, {}
       )
     end
 
@@ -158,6 +175,84 @@ describe ThinkingSphinx::Search do
       ThinkingSphinx::Search.send(
         :instances_from_results, @results, {:select => :fields}, Person
       ).should == [@person_a, @person_b, @person_c]
+    end
+    
+    it "should run the append distances function when distance_name is passed" do
+      ThinkingSphinx::Search.stub_method(:append_distances => @results)
+      
+      ThinkingSphinx::Search.send(
+        :instances_from_results, @results, {:distance_name => 'distance'}, Person
+      )
+      
+      Person.should have_received(:find).with(
+        :all,
+        :conditions => {:id => [@person_a.id, @person_b.id, @person_c.id]},
+        :include    => nil,
+        :select     => nil
+      )
+    end
+    
+    it "should have a test for the append_distances function"
+  end
+  
+  describe "count method" do
+    before :each do
+      @client = Riddle::Client.stub_instance(
+        :filters    => [],
+        :filters=   => true,
+        :id_range=  => true,
+        :sort_mode  => :asc,
+        :limit      => 5,
+        :offset=    => 0,
+        :sort_mode= => true,
+        :query      => {
+          :matches  => [],
+          :total    => 50
+        }
+      )
+
+      ThinkingSphinx::Search.stub_methods(
+        :client_from_options => @client,
+        :search_conditions   => ["", []]
+      )
+    end
+
+    it "should return query total" do
+      ThinkingSphinx::Search.count(42, "an_index").should == 50
+    end
+  end
+  
+  describe "search result" do
+    before :each do
+      @results = ThinkingSphinx::Search.search "nothing will match this"
+    end
+    
+    it "should respond to previous_page" do
+      @results.should respond_to(:previous_page)
+    end
+    
+    it "should respond to next_page" do
+      @results.should respond_to(:next_page)
+    end
+    
+    it "should respond to current_page" do
+      @results.should respond_to(:current_page)
+    end
+    
+    it "should respond to total_pages" do
+      @results.should respond_to(:total_pages)
+    end
+    
+    it "should respond to total_entries" do
+      @results.should respond_to(:total_entries)
+    end
+    
+    it "should respond to offset" do
+      @results.should respond_to(:offset)
+    end
+        
+    it "should be a subclass of Array" do
+      @results.should be_kind_of(Array)
     end
   end
 end
