@@ -213,6 +213,7 @@ describe "ThinkingSphinx::ActiveRecord::Delta" do
 
       @person = Person.new
       @person.stub_method(:system => true)
+      @person.stub_method(:id => 1)
     end
     
     after :each do

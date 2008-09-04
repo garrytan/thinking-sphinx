@@ -84,7 +84,7 @@ module ThinkingSphinx
               ['sphinx_deleted'],
               {self.id => 1}
             ) if self.in_core_index?
-            
+
             unless ThinkingSphinx.offline_indexing?
               configuration = ThinkingSphinx::Configuration.new
               system "indexer --config #{configuration.config_file} --rotate #{self.class.indexes.first.name}_delta"

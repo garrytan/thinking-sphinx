@@ -59,14 +59,26 @@ describe "ThinkingSphinx::ActiveRecord" do
       }.length.should == 1
     end
     
-    it "should add before_save and after_commit hooks to the model if delta indexing is enabled" do
+    it "should add before_save and after_commit hooks to the model if delta indexing is enabled and the delta is simple" do
       @index.stub_method(:delta? => true)
+      @index.stub_method(:simple_delta? => true)
       
       TestModule::TestModel.define_index do; end
       
       TestModule::TestModel.should have_received(:before_save)
       TestModule::TestModel.should have_received(:after_commit)
     end
+
+    it "should not add before_save and after_commit hooks to the model if delta indexing is enabled but the delta is not simple" do
+      @index.stub_method(:delta? => true)
+      @index.stub_method(:simple_delta? => false)
+      
+      TestModule::TestModel.define_index do; end
+      
+      TestModule::TestModel.should_not have_received(:before_save)
+      TestModule::TestModel.should have_received(:after_commit)
+    end
+
     
     it "should not add before_save and after_commit hooks to the model if delta indexing is disabled" do
       TestModule::TestModel.define_index do; end
@@ -77,6 +89,7 @@ describe "ThinkingSphinx::ActiveRecord" do
     
     it "should add an after_destroy hook with delta indexing enabled" do
       @index.stub_method(:delta? => true)
+      @index.stub_method(:simple_delta? => true)
       
       TestModule::TestModel.define_index do; end
       
