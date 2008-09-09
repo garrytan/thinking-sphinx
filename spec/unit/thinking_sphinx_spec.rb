@@ -57,6 +57,23 @@ describe ThinkingSphinx do
     ThinkingSphinx.updates_enabled?.should be_true
   end
   
+  it "should not use offline indexing by default" do
+    ThinkingSphinx.offline_indexing = nil
+    ThinkingSphinx.offline_indexing?.should be_false
+  end
+  
+  it "should disable offline indexing" do
+    ThinkingSphinx.offline_indexing = false
+    ThinkingSphinx.offline_indexing?.should be_false
+  end
+  
+  it "should enable offline indexing" do
+    ThinkingSphinx.offline_indexing = false
+    ThinkingSphinx.offline_indexing?.should be_false
+    ThinkingSphinx.offline_indexing = true
+    ThinkingSphinx.offline_indexing?.should be_true
+  end
+  
   describe "use_group_by_shortcut? method" do
     after :each do
       ::ActiveRecord::Base.connection.unstub_method(:select_all)

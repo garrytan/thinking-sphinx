@@ -46,7 +46,7 @@ module ThinkingSphinx
       :pid_file, :searchd_file_path, :address, :port, :allow_star,
       :min_prefix_len, :min_infix_len, :mem_limit, :max_matches, :morphology,
       :charset_type, :charset_table, :ignore_chars, :html_strip,
-      :html_remove_elements, :app_root
+      :html_remove_elements, :app_root, :db_config_name
     
     attr_reader :environment
     
@@ -76,7 +76,8 @@ module ThinkingSphinx
       self.ignore_chars         = nil
       self.html_strip           = false
       self.html_remove_elements = ""
-      
+      self.db_config_name       = environment
+
       parse_config
     end
     

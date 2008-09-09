@@ -90,35 +90,27 @@ sql_query_info   = #{to_sql_query_info}
       config
     end
     
+    # Creates the config text dealing with deltas.
+    # 
     def delta_config(index, adapter, charset_type)
       return '' unless delta?
-
+      raise "#{@delta[:field]} is not a datetime" unless simple_delta? || @model.columns_hash[@delta[:field].to_s].type == :datetime
+      
       sql = <<-SOURCE
       
-      source #{model.indexes.first.name}_#{index}_delta : #{model.indexes.first.name}_#{index}_core
+      source #{@model.indexes.first.name}_#{index}_delta : #{@model.indexes.first.name}_#{index}_core
       {
       sql_query_pre    = 
       sql_query_pre    = #{charset_type == "utf-8" && adapter == :mysql ? "SET NAMES utf8" : ""}
       #{"sql_query_pre    = SET SESSION group_concat_max_len = #{@options[:group_concat_max_len]}" if @options[:group_concat_max_len]}
+      sql_query        = #{to_sql(true).gsub(/\n/, ' ')}
+      sql_query_range  = #{to_sql_query_range(true)}
+      }
       SOURCE
-      
-      if simple_delta?
-        sql += <<-SOURCE
-        sql_query        = #{to_sql(true, :delta => true).gsub(/\n/, ' ')}
-        sql_query_range  = #{to_sql_query_range(true, :delta => true)}
-        }
-        SOURCE
-      else     
-        raise "#{@delta[:field]} is not a datetime" unless model.columns_hash[@delta[:field].to_s].type == :datetime   
-        sql += <<-SOURCE
-        sql_query        = #{to_sql(true, @delta).gsub(/\n/, ' ')}
-        sql_query_range  = #{to_sql_query_range(true, @delta)}
-        }
-        SOURCE
-      end
-      
+
       sql
     end
+    
     # Link all the fields and associations to their corresponding
     # associations and joins. This _must_ be called before interrogating
     # the index's fields and associations for anything that may reference
@@ -148,26 +140,26 @@ sql_query_info   = #{to_sql_query_info}
     
     # Generates the big SQL statement to get the data back for all the fields
     # and attributes, using all the relevant association joins. If you want
-    # the version filtered for delta values, send through :delta => true in the
-    # options. Won't do much though if the index isn't set up to support a
-    # delta sibling.
+    # the version filtered for delta values pass +true+.
+    # Won't do much though if the index isn't set up to support a delta sibling.
     # 
     # Examples:
     # 
-    #   index.to_sql
-    #   index.to_sql(:delta => true)
+    #   index.to_sql        # for core indexes
+    #   index.to_sql(true)  # for deltas
     #
-    def to_sql(for_delta=false, options={})
+    def to_sql(for_delta=false)
       assocs = all_associations
       
       where_clause = ""
-      if for_delta && self.delta?
+      if for_delta
         if self.simple_delta?
-          where_clause << " AND #{@model.quoted_table_name}.#{quote_column('delta')}" +" = #{options[:delta] ? db_boolean(true) : db_boolean(false)}"
+          where_clause << " AND #{@model.quoted_table_name}.#{quote_column('delta')}" +" = #{db_boolean(true)}"
         else
           where_clause << " AND #{@model.quoted_table_name}.#{quote_column(@delta[:field])} > DATE_SUB(NOW(), INTERVAL #{@delta[:threshold]} SECOND)"
         end
       end
+      
       unless @conditions.empty?
         where_clause << " AND " << @conditions.join(" AND ")
       end
@@ -206,10 +198,10 @@ GROUP BY #{ (
     end
     
     # Simple helper method for the query range SQL - which is a statement that
-    # returns minimum and maximum id values. These can be filtered by delta -
-    # so pass in :delta => true to get the delta version of the SQL.
+    # returns minimum and maximum id values. If +for_delta+ is passed as true,
+    # the SQL will automatically filter using delta specifications.
     # 
-    def to_sql_query_range(for_delta=false, options={})
+    def to_sql_query_range(for_delta=false)
       min_statement = "MIN(#{quote_column(@model.primary_key)})"
       max_statement = "MAX(#{quote_column(@model.primary_key)})"
       
@@ -225,7 +217,7 @@ GROUP BY #{ (
       if for_delta && self.delta?
         if self.simple_delta?
           sql << "WHERE #{@model.quoted_table_name}.#{quote_column('delta')} " + 
-            "= #{options[:delta] ? db_boolean(true) : db_boolean(false)}" 
+            "= #{db_boolean(true)}" 
         else
           sql << "WHERE #{@model.quoted_table_name}.#{quote_column(@delta[:field])} " +
           "> DATE_SUB(NOW(), INTERVAL #{@delta[:threshold]} SECOND)"
@@ -238,6 +230,7 @@ GROUP BY #{ (
     # Returns the SQL query to run before a full index - ie: nothing unless the
     # index has a delta, and then it's an update statement to set delta values
     # back to 0.
+    # This is only for "simple" deltas, not the date-based version.
     #
     def to_sql_query_pre
       if self.simple_delta? 
@@ -253,11 +246,17 @@ GROUP BY #{ (
     def delta?
       @delta
     end
-    
+
+    # Flag to indicate whether this index has a corresponding delta index 
+    # which uses a datefield for the delta column.
+    #    
     def complex_delta?
       delta? && @delta.is_a?(Hash) && @delta.has_key?(:field) && @delta.has_key?(:threshold)
     end
-    
+
+    # Flag to indicate whether this index has a corresponding delta index 
+    # which uses the standard boolean delta column.
+    # 
     def simple_delta?
       delta? && !complex_delta?      
     end
