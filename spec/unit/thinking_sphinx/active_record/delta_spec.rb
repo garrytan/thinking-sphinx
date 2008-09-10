@@ -203,6 +203,13 @@ describe "ThinkingSphinx::ActiveRecord::Delta" do
       
       @client.should have_received(:update)
     end
+    
+    it "should capture and log silently if exception" do
+      ThinkingSphinx::Configuration.stub_method_to_raise(:new => RuntimeError.new('arrrrg'))
+      @person.send(:index_delta).should_not raise_error(RuntimeError)
+      @person.send(:index_delta).should be_true
+    end
+    
   end
   
   describe "index_delta method with offline indexing" do
