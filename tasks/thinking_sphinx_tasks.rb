@@ -54,7 +54,7 @@ namespace :thinking_sphinx do
       
       if ENV['MODEL']
         index_name = get_index_name(ENV['MODEL'])
-        ts_index(delta_name(index_name))
+				ts_index(index_name, true)
       else
         puts "Reindexing deltas of #{ThinkingSphinx.indexed_models.size} indexes"
         ThinkingSphinx.indexed_models.each do |index|
