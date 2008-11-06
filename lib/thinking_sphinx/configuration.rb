@@ -100,7 +100,7 @@ module ThinkingSphinx
       file_path ||= "#{self.config_file}"
       database_confs = YAML::load(ERB.new(IO.read("#{app_root}/config/database.yml")).result)
       database_confs.symbolize_keys!
-      database_conf  = database_confs[environment.to_sym]
+      database_conf  = database_confs[db_config_name.to_sym]
       database_conf.symbolize_keys!
       
       open(file_path, "w") do |file|

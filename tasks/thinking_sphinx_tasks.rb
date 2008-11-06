@@ -1,11 +1,11 @@
 require 'fileutils'
-@indexer = `which indexer`.strip
-@searchd = `which searchd`.strip
 
 namespace :thinking_sphinx do
   task :app_env do
     Rake::Task[:environment].invoke if defined?(RAILS_ROOT)
     Rake::Task[:merb_init].invoke    if defined?(Merb)
+    @indexer = (`which indexer` rescue '/usr/local/bin/indexer').strip
+    @searchd = (`which searchd` rescue '/usr/local/bin/searchd').strip
   end
   
   desc "Start a Sphinx searchd daemon using Thinking Sphinx's settings"
