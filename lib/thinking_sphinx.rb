@@ -70,6 +70,16 @@ module ThinkingSphinx
     @@deltas_enabled = value
   end
   
+  
+  
+  @@delta_indexing_time = 10.minutes
+  def self.delta_indexing_time=(value)
+    @@delta_indexing_time = value
+  end
+  def self.delta_indexing_time
+    @@delta_indexing_time 
+  end
+  
   @@offline_indexing = nil
   
   # Enable/disable to handle delta indexing outside of rails.
