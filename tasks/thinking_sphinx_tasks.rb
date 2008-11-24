@@ -195,7 +195,8 @@ def check_rotate
     # failed.each {|f| File.delete f }
     err =  "Problem rotating indexes!\n"
     err << "Look in #{config.searchd_file_path} for files with 'new' in their name - they shouldn't be there!  You may need to reindex."
-    raise RuntimeError, err
+    puts "WARNING: #{err}"
+    # raise RuntimeError, err
   end
   return true
 end
