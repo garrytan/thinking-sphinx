@@ -139,7 +139,8 @@ module ThinkingSphinx
         {self.id => 1}
       ) if ThinkingSphinx.deltas_enabled? &&
         self.class.indexes.any? { |index| index.delta? } &&
-        self.delta?
+        (!defined?( self.delta? ) || self.delta?)
+        # note: I've added the defined? check because since we don't actually have a delta flag, we just want to return true in this particular case.
     end
   end
 end
