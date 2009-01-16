@@ -185,7 +185,7 @@ end
 # Snagged from UltraSphinx...just warns of possible problems though,
 # instead of deleting the potentially corrupt indexes.
 def check_rotate
-  sleep(5)
+  sleep(15)
   config = ThinkingSphinx::Configuration.new
   
   failed = Dir[config.searchd_file_path + "/*.new.*"]
@@ -195,7 +195,8 @@ def check_rotate
     # failed.each {|f| File.delete f }
     err =  "Problem rotating indexes!\n"
     err << "Look in #{config.searchd_file_path} for files with 'new' in their name - they shouldn't be there!  You may need to reindex."
-    raise RuntimeError, err
+    puts err
+    # raise RuntimeError, err
   end
   return true
 end
